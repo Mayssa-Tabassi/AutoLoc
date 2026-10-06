@@ -24,6 +24,7 @@ public class Employe {
 
     @Enumerated(EnumType.STRING)
     private RoleEmploye role;
+    //lazy =CHARGER SEULMENT LES AASOCTION QU'oN ONT a besion
     @ManyToOne
     private Agence agence;
 }
