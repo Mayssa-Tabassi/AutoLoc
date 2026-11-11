@@ -1,0 +1,165 @@
+### Scénarios de test DTO / validation / erreurs (client HTTP d'IntelliJ ou Postman)
+### Base : http://localhost:8080/api  (context-path = /api)
+### Prérequis : au moins une réservation en base (id 1) sans contrat.
+
+### 1. Liste des contrats (DTO) -> 200
+GET http://localhost:8080/api/contrats
+
+### 2. Création valide -> 201
+POST http://localhost:8080/api/contrats
+Content-Type: application/json
+
+{
+  "dateSignature": "2026-11-01",
+  "montantTotal": 450.00,
+  "valide": true,
+  "reservationId": 1
+}
+
+### 3. Détail d'un contrat -> 200
+GET http://localhost:8080/api/contrats/1
+
+### 4. Contrat inexistant -> 404
+GET http://localhost:8080/api/contrats/999
+
+### 5. Validation : champs manquants -> 400 (détail par champ)
+POST http://localhost:8080/api/contrats
+Content-Type: application/json
+
+{}
+
+### 6. Validation : montant négatif + date future -> 400
+POST http://localhost:8080/api/contrats
+Content-Type: application/json
+
+{
+  "dateSignature": "2030-01-01",
+  "montantTotal": -10,
+  "valide": true,
+  "reservationId": 1
+}
+
+### 7. JSON / date mal formés -> 400
+POST http://localhost:8080/api/contrats
+Content-Type: application/json
+
+{
+  "dateSignature": "01/11/2026",
+  "montantTotal": 450,
+  "valide": true,
+  "reservationId": 1
+}
+
+### 8. Réservation inexistante -> 404
+POST http://localhost:8080/api/contrats
+Content-Type: application/json
+
+{
+  "dateSignature": "2026-11-01",
+  "montantTotal": 450,
+  "valide": true,
+  "reservationId": 999
+}
+
+### 9. Réservation déjà liée à un contrat (rejouer la requête 2) -> 409
+POST http://localhost:8080/api/contrats
+Content-Type: application/json
+
+{
+  "dateSignature": "2026-11-01",
+  "montantTotal": 450,
+  "valide": true,
+  "reservationId": 1
+}
+
+### 10. Mise à jour valide -> 200
+PUT http://localhost:8080/api/contrats/1
+Content-Type: application/json
+
+{
+  "dateSignature": "2026-11-02",
+  "montantTotal": 500.00,
+  "valide": false,
+  "reservationId": 1
+}
+
+### 11. Identifiant du mauvais type -> 400
+GET http://localhost:8080/api/contrats/abc
+
+### 12. Suppression -> 204
+DELETE http://localhost:8080/api/contrats/1
+
+### 13. Paiements (DTO, lecture seule) -> 200
+GET http://localhost:8080/api/paiements
+
+### 14. Paiement inexistant -> 404
+GET http://localhost:8080/api/paiements/999
+
+### 15. Méthode non supportée -> 405
+DELETE http://localhost:8080/api/paiements/1
+
+### ===== Autres entités (DTO + validation) =====
+
+### 16. Agence valide -> 201
+POST http://localhost:8080/api/agences
+Content-Type: application/json
+
+{ "nom": "AutoLoc Tunis", "ville": "Tunis", "adresse": "Av. Habib Bourguiba", "telephone": "71123456" }
+
+### 17. Agence invalide (nom vide, téléphone incorrect) -> 400
+POST http://localhost:8080/api/agences
+Content-Type: application/json
+
+{ "nom": "", "telephone": "abc" }
+
+### 18. Client invalide (email incorrect, date future) -> 400
+POST http://localhost:8080/api/clients
+Content-Type: application/json
+
+{ "nom": "Ben Ali", "email": "pas-un-email", "dateInscription": "2030-01-01" }
+
+### 19. Employé : rôle inconnu -> 400 ; agence inexistante -> 404
+POST http://localhost:8080/api/employes
+Content-Type: application/json
+
+{ "nom": "Trabelsi", "role": "DIRECTEUR" }
+
+### 20. Équipement valide -> 201
+POST http://localhost:8080/api/equipements
+Content-Type: application/json
+
+{ "libelle": "GPS" }
+
+### 21. Véhicule valide -> 201
+POST http://localhost:8080/api/vehicules
+Content-Type: application/json
+
+{ "immatriculation": "123 TUN 4567", "marque": "Peugeot", "modele": "208",
+  "categorie": "CITADINE", "tarifJournalier": 80.00, "statut": "DISPONIBLE",
+  "agenceId": 1, "equipementIds": [1] }
+
+### 22. Véhicule invalide (champs manquants, tarif négatif) -> 400
+POST http://localhost:8080/api/vehicules
+Content-Type: application/json
+
+{ "marque": "Peugeot", "tarifJournalier": -5 }
+
+### 23. Véhicule : immatriculation en double -> 409
+POST http://localhost:8080/api/vehicules
+Content-Type: application/json
+
+{ "immatriculation": "123 TUN 4567", "marque": "Renault", "modele": "Clio",
+  "categorie": "CITADINE", "tarifJournalier": 70, "statut": "DISPONIBLE" }
+
+### 24. Réservation : date de fin avant début -> 400
+POST http://localhost:8080/api/reservations
+Content-Type: application/json
+
+{ "dateDebut": "2026-12-10", "dateFin": "2026-12-01", "statut": "EN_ATTENTE",
+  "vehiculeId": 1, "clientId": 1 }
+
+### 25. Maintenance valide -> 201
+POST http://localhost:8080/api/maintenances
+Content-Type: application/json
+
+{ "dateDebut": "2026-12-01", "dateFin": "2026-12-03", "description": "Vidange", "vehiculeId": 1 }
