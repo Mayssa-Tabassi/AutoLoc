@@ -5,10 +5,12 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-import tn.esprit.autoloc_api.domain.Reservation;
+import tn.esprit.autoloc_api.dto.ReservationRequestDTO;
+import tn.esprit.autoloc_api.dto.ReservationResponseDTO;
 import tn.esprit.autoloc_api.service.IReservationService;
 
 import java.util.List;
@@ -24,7 +26,7 @@ public class ReservationController {
     @Operation(summary = "Lister les réservations")
     @ApiResponse(responseCode = "200", description = "Liste retournée (éventuellement vide)")
     @GetMapping
-    public List<Reservation> findAll() {
+    public List<ReservationResponseDTO> findAll() {
         return reservationService.findAll();
     }
 
@@ -34,7 +36,8 @@ public class ReservationController {
             @ApiResponse(responseCode = "404", description = "Ressource introuvable")
     })
     @GetMapping("/{id}")
-    public Reservation findById(@Parameter(description = "Identifiant") @PathVariable Long id) {
+    public ReservationResponseDTO findById(
+            @Parameter(description = "Identifiant") @PathVariable Long id) {
         return reservationService.findById(id);
     }
 
@@ -45,7 +48,7 @@ public class ReservationController {
     })
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public Reservation create(@RequestBody Reservation body) {
+    public ReservationResponseDTO create(@Valid @RequestBody ReservationRequestDTO body) {
         return reservationService.create(body);
     }
 
@@ -56,8 +59,9 @@ public class ReservationController {
             @ApiResponse(responseCode = "400", description = "Données invalides")
     })
     @PutMapping("/{id}")
-    public Reservation update(@Parameter(description = "Identifiant") @PathVariable Long id,
-                           @RequestBody Reservation body) {
+    public ReservationResponseDTO update(
+            @Parameter(description = "Identifiant") @PathVariable Long id,
+            @Valid @RequestBody ReservationRequestDTO body) {
         return reservationService.update(id, body);
     }
 

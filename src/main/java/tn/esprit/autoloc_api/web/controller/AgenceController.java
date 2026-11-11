@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import tn.esprit.autoloc_api.domain.Agence;
+import tn.esprit.autoloc_api.dto.AgenceResponseDTO;
 import tn.esprit.autoloc_api.service.IAgenceService;
 
 import java.util.List;
@@ -24,7 +25,7 @@ public class AgenceController {
     @Operation(summary = "Lister les agences")
     @ApiResponse(responseCode = "200", description = "Liste retournée (éventuellement vide)")
     @GetMapping
-    public List<Agence> findAll() {
+    public List<AgenceResponseDTO> findAll() {
         return agenceService.findAll();
     }
 
@@ -34,7 +35,7 @@ public class AgenceController {
             @ApiResponse(responseCode = "404", description = "Ressource introuvable")
     })
     @GetMapping("/{id}")
-    public Agence findById(@Parameter(description = "Identifiant") @PathVariable Long id) {
+    public AgenceResponseDTO findById(@Parameter(description = "Identifiant") @PathVariable Long id) {
         return agenceService.findById(id);
     }
 
@@ -45,7 +46,7 @@ public class AgenceController {
     })
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public Agence create(@RequestBody Agence body) {
+    public AgenceResponseDTO create(@RequestBody Agence body) {
         return agenceService.create(body);
     }
 
@@ -56,7 +57,7 @@ public class AgenceController {
             @ApiResponse(responseCode = "400", description = "Données invalides")
     })
     @PutMapping("/{id}")
-    public Agence update(@Parameter(description = "Identifiant") @PathVariable Long id,
+    public AgenceResponseDTO update(@Parameter(description = "Identifiant") @PathVariable Long id,
                            @RequestBody Agence body) {
         return agenceService.update(id, body);
     }

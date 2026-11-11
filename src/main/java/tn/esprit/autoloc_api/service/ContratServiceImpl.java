@@ -1,70 +1,95 @@
 package tn.esprit.autoloc_api.service;
 
-import java.math.BigDecimal;
 import java.util.List;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import tn.esprit.autoloc_api.domain.Contrat;
+import tn.esprit.autoloc_api.domain.Reservation;
+import tn.esprit.autoloc_api.dto.ContratRequestDTO;
+import tn.esprit.autoloc_api.dto.ContratResponseDTO;
+import tn.esprit.autoloc_api.exception.ConflictException;
 import tn.esprit.autoloc_api.exception.ResourceNotFoundException;
+import tn.esprit.autoloc_api.mapper.ContratMapper;
 import tn.esprit.autoloc_api.repository.IContratRepository;
+import tn.esprit.autoloc_api.repository.IReservationRepository;
 
 @Service
 @RequiredArgsConstructor
 public class ContratServiceImpl implements IContratService {
 
     private final IContratRepository contratRepository;
+    private final IReservationRepository reservationRepository;
+    private final ContratMapper contratMapper;
 
     @Override
-    public Contrat create(Contrat contrat) {
-        if (contrat.getIdContrat() != null) {
-            throw new IllegalArgumentException(
-                    "Un nouveau contrat ne doit pas avoir d'identifiant");
-        }
+    @Transactional
+    public ContratResponseDTO create(ContratRequestDTO dto) {
+        Reservation reservation = chargerReservation(dto.reservationId());
+        verifierReservationLibre(reservation, null);
 
-        if (contrat.getMontantTotal() != null
-                && contrat.getMontantTotal().compareTo(BigDecimal.ZERO) < 0) {
-            throw new IllegalArgumentException(
-                    "Le montant total ne peut pas être négatif");
-        }
+        Contrat contrat = contratMapper.toEntity(dto);
+        contrat.setReservation(reservation);
 
-        return contratRepository.save(contrat);
-    }
-
-
-    @Override
-    public Contrat findById(Long id) {
-        return contratRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Contrat", id));
+        return contratMapper.toResponse(contratRepository.save(contrat));
     }
 
     @Override
-    public List<Contrat> findAll() {
-        return (List<Contrat>) contratRepository.findAll();
+    @Transactional(readOnly = true)
+    public ContratResponseDTO findById(Long id) {
+        return contratMapper.toResponse(chargerContrat(id));
     }
 
     @Override
-    public Contrat update(Long id, Contrat contrat) {
-        Contrat existant = findById(id);
-
-        if (contrat.getMontantTotal() != null
-                && contrat.getMontantTotal().compareTo(BigDecimal.ZERO) < 0) {
-            throw new IllegalArgumentException(
-                    "Le montant total ne peut pas être négatif");
-        }
-
-        existant.setMontantTotal(contrat.getMontantTotal());
-
-        return contratRepository.save(existant);
+    @Transactional(readOnly = true)
+    public List<ContratResponseDTO> findAll() {
+        return contratMapper.toResponseList(contratRepository.findAll());
     }
 
     @Override
+    @Transactional
+    public ContratResponseDTO update(Long id, ContratRequestDTO dto) {
+        Contrat existant = chargerContrat(id);
+
+        Reservation reservation = chargerReservation(dto.reservationId());
+        verifierReservationLibre(reservation, id);
+
+        contratMapper.updateEntity(dto, existant);
+        existant.setReservation(reservation);
+
+        return contratMapper.toResponse(contratRepository.save(existant));
+    }
+
+    @Override
+    @Transactional
     public void deleteById(Long id) {
         if (!contratRepository.existsById(id)) {
             throw new ResourceNotFoundException("Contrat", id);
         }
 
         contratRepository.deleteById(id);
+    }
+
+    private Contrat chargerContrat(Long id) {
+        return contratRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Contrat", id));
+    }
+
+    private Reservation chargerReservation(Long idReservation) {
+        return reservationRepository.findById(idReservation)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Réservation", idReservation));
+    }
+
+    /** Une réservation ne peut être liée qu'à un seul contrat (OneToOne). */
+    private void verifierReservationLibre(Reservation reservation, Long idContratCourant) {
+        Contrat lie = reservation.getContrat();
+        if (lie != null && !lie.getIdContrat().equals(idContratCourant)) {
+            throw new ConflictException(
+                    "La réservation " + reservation.getIdReservation()
+                            + " est déjà associée au contrat " + lie.getIdContrat());
+        }
     }
 }

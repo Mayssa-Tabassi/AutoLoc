@@ -15,3 +15,4 @@ public class ResourceNotFoundException extends RuntimeException {
         super(resource + " introuvable avec l'identifiant " + id);
     }
 }
+
